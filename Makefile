@@ -9,8 +9,8 @@ LDFLAGS = -m elf_i386 -T link.ld
 # Destinations
 OBJS = arch/x86/boot/multiboot.o arch/x86/boot/start.o \
        arch/x86/gdt.o arch/x86/isr.o \
-       src/kernel.o src/pmm.o src/vmm.o src/isr.o src/irq.o src/vga.o src/keyboard.o \
-       src/lib/string.o src/lib/stdio.o src/syscall.o
+       src/kernel.o src/pmm.o src/vmm.o src/isr.o src/irq.o src/idt.o src/vga.o src/keyboard.o \
+       src/lib/string.o src/lib/stdio.o src/syscall.o src/stack_chk_fail.o
 
 all: kernel.iso
 
@@ -30,4 +30,4 @@ kernel.bin: $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf *.o arch/*.o arch/x86/boot/*.o src/*.o src/lib/*.o isodir kernel.bin kernel.iso
+	rm -rf *.o arch/*.o arch/x86/boot/*.o arch/x86/*.o src/*.o src/lib/*.o isodir kernel.bin kernel.iso

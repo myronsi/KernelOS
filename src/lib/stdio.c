@@ -1,71 +1,50 @@
-#include <kernel/types.h>
-#include <kernel/vga.h>
 #include <common/stdio.h>
+#include <common/string.h>
+#include <kernel/types.h>
 #include <common/stdarg.h>
+#include <kernel/vga.h>  // Для vga_putchar
 
-// Базовая реализация printf
-void printf(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-}
-
-// Форматированный вывод с поддержкой %s, %d, %x
-void vprintf(const char *format, va_list args) {
-    while (*format) {
-        if (*format == '%') {
-            format++;
-            switch (*format) {
-                case 's': {
-                    char *s = va_arg(args, char*);
-                    while (*s) vga_putchar(*s++);
-                    break;
-                }
-                case 'd': {
-                    int num = va_arg(args, int);
-                    if (num < 0) {
-                        vga_putchar('-');
-                        num = -num;
-                    }
-                    print_num(num, 10);
-                    break;
-                }
-                case 'x': {
-                    uint32_t num = va_arg(args, uint32_t);
-                    print_num(num, 16);
-                    break;
-                }
-                case 'c': {
-                    char c = va_arg(args, int);
-                    vga_putchar(c);
-                    break;
-                }
-            }
-        } else {
-            vga_putchar(*format);
-        }
-        format++;
-    }
-}
-
-// Вспомогательная функция для вывода чисел
-static void print_num(uint32_t num, int base) {
+static void print_num(uint32_t num, int base, int *printed) {
     char buffer[32];
-    char *ptr = buffer;
-
+    int i = 0;
     if (num == 0) {
         vga_putchar('0');
+        (*printed)++;
         return;
     }
-
-    while (num > 0) {
+    while (num && i < (int)(sizeof(buffer) - 1)) {
         int rem = num % base;
-        *ptr++ = (rem < 10) ? (rem + '0') : (rem - 10 + 'a');
+        buffer[i++] = (rem < 10) ? '0' + rem : 'a' + rem - 10;
         num /= base;
     }
-
-    while (ptr > buffer) {
-        vga_putchar(*--ptr);
+    for (int j = i - 1; j >= 0; j--) {
+        vga_putchar(buffer[j]);
+        (*printed)++;
     }
+}
+
+int vprintf(const char *format, va_list args) {
+    int printed = 0;
+    for (int i = 0; format[i] != '\0'; i++) {
+        char c = format[i];
+        if (c == '%') {
+            i++;
+            if (format[i] == 'd') {
+                int num = va_arg(args, int);
+                print_num((uint32_t)num, 10, &printed);
+            }
+        } else {
+            vga_putchar(c);
+            printed++;
+        }
+    }
+    return printed;
+}
+
+int printf(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int result = vprintf(format, args);
+    va_end(args);
+    return result;
 }

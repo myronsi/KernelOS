@@ -1,5 +1,6 @@
 #include <kernel/types.h>
 #include <kernel/syscall.h>
+#include <kernel/isr.h>   // Добавлено для определения типа isr_registers_t
 
 // Таблица системных вызовов
 static syscall_handler_t syscall_table[256];

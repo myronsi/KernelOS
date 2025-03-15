@@ -1,18 +1,19 @@
-#pragma once
+#ifndef ISR_H
+#define ISR_H
+
 #include <kernel/types.h>
 
-// Структура регистров при прерывании
 typedef struct {
-    uint32_t ds, edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    uint32_t int_no, err_code;
+    uint32_t ds;                  
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; 
+    uint32_t int_no, err_code;     
     uint32_t eip, cs, eflags, useresp, ss;
-} isr_registers_t;
+} registers_t;
 
-// Тип обработчика прерываний
-typedef void (*isr_handler_t)(isr_registers_t*);
+typedef void (*isr_t)(registers_t*);
 
-// Регистрация обработчика
-void register_interrupt_handler(uint8_t num, isr_handler_t handler);
+void register_interrupt_handler(uint8_t n, isr_t handler);
 
-// Инициализация обработчиков прерываний
-void isr_init(void);
+void isr_init();
+
+#endif
