@@ -1,5 +1,6 @@
 #include <kernel/keyboard.h>
 #include <kernel/irq.h>
+#include <kernel/vga.h>
 #include <common/string.h>
 #include <common/io.h>  // Для inb
 

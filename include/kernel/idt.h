@@ -1,3 +1,6 @@
+#ifndef IDT_H
+#define IDT_H
+
 #pragma once
 #include <kernel/types.h>  // Assuming types like uint8_t, uint32_t are defined here
 
@@ -22,4 +25,7 @@ extern idt_ptr_t idtp;        // IDT pointer for lidt instruction
 
 // Function declarations
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags);
+void idt_load(void *idt_ptr);
 void idt_init(void);
+
+#endif

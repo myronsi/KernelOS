@@ -14,7 +14,7 @@ extern idt_ptr_t idtp;  // idtp должен быть объявлен в IDT
 
 isr_t interrupt_handlers[IDT_ENTRIES];
 
-void isr_handler(registers_t *regs) {
+void isr_handler(isr_registers_t *regs) {
     if (interrupt_handlers[regs->int_no]) {
         isr_t handler = interrupt_handlers[regs->int_no];
         handler(regs);
@@ -23,7 +23,7 @@ void isr_handler(registers_t *regs) {
     }
 }
 
-void irq_handler(registers_t *regs) {
+void irq_handler(isr_registers_t *regs) {
     if (regs->int_no >= 32 && regs->int_no < 48) {
         irq_send_eoi(regs->int_no - 32);
     }

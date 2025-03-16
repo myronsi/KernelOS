@@ -1,15 +1,20 @@
 #include <kernel/idt.h>
 
-// Define the global IDT array and pointer
+// Определения для записи IDT
 idt_entry_t idt[256];
 idt_ptr_t idtp;
 
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
-    idt[num].base_low = base & 0xFFFF;        // Lower 16 bits
-    idt[num].base_high = (base >> 16) & 0xFFFF; // Upper 16 bits
-    idt[num].sel = sel;                        // Segment selector
-    idt[num].always0 = 0;                      // Always 0
-    idt[num].flags = flags;                    // Flags
+    idt[num].base_low  = base & 0xFFFF;
+    idt[num].base_high = (base >> 16) & 0xFFFF;
+    idt[num].sel       = sel;
+    idt[num].always0   = 0;
+    idt[num].flags     = flags;
+}
+
+void idt_load(void *idt_ptr) {
+    // Загрузка IDT через инструкцию lidt.
+    __asm__ __volatile__("lidt (%0)" : : "r"(idt_ptr));
 }
 
 void idt_init(void) {

@@ -61,3 +61,5 @@ dkms.conf
 *.njsproj
 *.sln
 *.sw?
+
+kernel.*
