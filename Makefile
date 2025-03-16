@@ -4,7 +4,7 @@ LD = ld
 
 CFLAGS = -m32 -nostdlib -nostdinc -ffreestanding -Wall -Wextra -Iinclude
 ASMFLAGS = -f elf32
-LDFLAGS = -m elf_i386 -T link.ld
+LDFLAGS = -m elf_i386 -T link.ld -nostdlib
 
 # Destinations
 OBJS = arch/x86/boot/multiboot.o arch/x86/boot/start.o \
@@ -14,7 +14,7 @@ OBJS = arch/x86/boot/multiboot.o arch/x86/boot/start.o \
 
 all: kernel.iso
 
-kernel.iso: kernel.bin
+kernel.iso: kernel.bin grub.cfg
 	mkdir -p isodir/boot/grub
 	cp kernel.bin isodir/boot/
 	cp grub.cfg isodir/boot/grub/
