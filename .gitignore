@@ -63,3 +63,8 @@ dkms.conf
 *.sw?
 
 *.bin
+
+*.com
+
+bochsout.*
+bochsrc.*
