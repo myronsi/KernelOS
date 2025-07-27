@@ -1,11 +1,10 @@
 #include "../include/shell.h"
-#include <stdlib.h>
+#include "../include/fs.h"
 
 void launch_shell(int n)
 {
     string ch = (string) malloc(200);
     string temp;
-    int counter = 0;
     do
     {
         print("KernelOS (");
@@ -55,13 +54,34 @@ void launch_shell(int n)
         {
             multiply();
         }
+        else if (strEql(ch, "mkdir"))
+        {
+            print("\nDirectory name: ");
+            string dir_name = readStr();
+            create_directory(current_dir, dir_name);
+            free(dir_name);
+            print("\n");
+        }
+        else if (strEql(ch, "mkf"))
+        {
+            print("\nFile name: ");
+            string file_name = readStr();
+            create_file(current_dir, file_name);
+            free(file_name);
+            print("\n");
+        }
+        else if (strEql(ch, "ls"))
+        {
+            print("\n");
+            list_directory(current_dir);
+        }
         else
         {
             print("\nBad command!\n");
             print("KernelOS> ");
         }
+        free(ch);
     } while (!strEql(ch, "exit"));
-    free(ch);
 }
 
 void sum()
@@ -312,5 +332,8 @@ void help()
     print("\nexit      : Quits the current shell");
     print("\ncolor     : Changes the colors of the terminal");
     print("\nmultiply  : Multiplies two numbers");
+    print("\nmkdir     : Creates a new directory");
+    print("\nmkf     : Creates a new empty file");
+    print("\nls        : Lists the contents of the current directory");
     print("\n\n");
 }

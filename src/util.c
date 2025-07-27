@@ -86,3 +86,17 @@ string int_to_string(int n)
     }
     return ch;
 }
+
+void* realloc(void* ptr, uint32 new_size)
+{
+    if (!ptr) {
+        return malloc(new_size);
+    }
+    void* new_ptr = malloc(new_size);
+    if (!new_ptr) {
+        return 0; // Out of memory
+    }
+    // Copy existing data (simplified, assumes ptr was allocated by malloc)
+    memory_copy(ptr, new_ptr, new_size);
+    return new_ptr;
+}

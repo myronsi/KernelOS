@@ -12,5 +12,6 @@ void* malloc(uint32 nbytes);
 void free(void* ptr);
 uint32 strlen(const char* str);
 void __stack_chk_fail_local(void);
+void* realloc(void* ptr, uint32 new_size);
 
 #endif
