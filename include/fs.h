@@ -6,8 +6,8 @@
 typedef struct fs_node {
     string name;
     int is_directory;
-    string content; // для файлов
-    struct fs_node** children; // для директорий
+    string content;
+    struct fs_node** children;
     int num_children;
 } fs_node_t;
 
@@ -18,5 +18,8 @@ void init_fs();
 void create_directory(fs_node_t* parent, string name);
 void create_file(fs_node_t* parent, string name);
 void list_directory(fs_node_t* dir);
+fs_node_t* find_file(string path);
+void write_file(fs_node_t* file, string new_content);
+string read_file(fs_node_t* file);
 
 #endif

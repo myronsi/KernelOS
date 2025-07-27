@@ -5,11 +5,38 @@ string readStr()
     string buffstr = (string) malloc(200);
     uint8 i = 0;
     uint8 reading = 1;
+    uint8 ctrl_pressed = 0;
+
     while (reading)
     {
         if (inportb(0x64) & 0x1)
         {
-            switch (inportb(0x60))
+            uint8 scancode = inportb(0x60);
+
+            if (scancode == 0x1D || scancode == 0xE0) {
+                ctrl_pressed = 1;
+                continue;
+            } else if (scancode == 0x9D || scancode == 0xE0 + 0x80) {
+                ctrl_pressed = 0;
+                continue;
+            }
+
+            if (ctrl_pressed) {
+                if (scancode == 31) {
+                    buffstr[0] = '\x01';
+                    buffstr[1] = 0;
+                    reading = 0;
+                    continue;
+                } else if (scancode == 45 || scancode == 0x2D || scancode == 0xAD) {
+                    buffstr[0] = '\x02';
+                    buffstr[1] = 0;
+                    reading = 0;
+                    continue;
+                }
+                continue;
+            }
+
+            switch (scancode)
             {
                 case 2:
                     if (i < 199) {
@@ -187,7 +214,8 @@ string readStr()
                     }
                     break;
                 case 28:
-                    buffstr[i] = 0;
+                    buffstr[i] = '\n';
+                    buffstr[i + 1] = 0;
                     reading = 0;
                     break;
                 case 30:

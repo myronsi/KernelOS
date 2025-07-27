@@ -94,9 +94,8 @@ void* realloc(void* ptr, uint32 new_size)
     }
     void* new_ptr = malloc(new_size);
     if (!new_ptr) {
-        return 0; // Out of memory
+        return 0;
     }
-    // Copy existing data (simplified, assumes ptr was allocated by malloc)
     memory_copy(ptr, new_ptr, new_size);
     return new_ptr;
 }

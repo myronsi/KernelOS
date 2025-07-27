@@ -7,7 +7,7 @@ LDFLAGS = -m elf_i386 -T src/link.ld
 EMULATOR = qemu-system-i386
 EMULATOR_FLAGS = -kernel
 
-OBJS = obj/kasm.o obj/kc.o obj/idt.o obj/isr.o obj/kb.o obj/screen.o obj/string.o obj/system.o obj/util.o obj/shell.o obj/fs.o
+OBJS = obj/kasm.o obj/kc.o obj/idt.o obj/isr.o obj/kb.o obj/screen.o obj/string.o obj/system.o obj/util.o obj/shell.o obj/fs.o obj/editor.o
 OUTPUT = kernelos/boot/kernel.bin
 
 run: all
@@ -50,6 +50,9 @@ obj/shell.o:src/shell.c
 
 obj/fs.o:src/fs.c
 	$(COMPILER) $(CFLAGS) src/fs.c -o obj/fs.o
+
+obj/editor.o:src/editor.c
+	$(COMPILER) $(CFLAGS) src/editor.c -o obj/editor.o
 
 build:all
 	#Activate the install xorr if you do not have it already installed

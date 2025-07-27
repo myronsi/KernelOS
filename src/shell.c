@@ -1,5 +1,6 @@
 #include "../include/shell.h"
 #include "../include/fs.h"
+#include "../include/editor.h"
 
 void launch_shell(int n)
 {
@@ -75,9 +76,41 @@ void launch_shell(int n)
             print("\n");
             list_directory(current_dir);
         }
+        else if (strEql(ch, "edit"))
+        {
+            print("\nFile path: ");
+            string path = readStr();
+            edit_file(path);
+            free(path);
+            print("\n");
+        }
+        else if (strEql(ch, "cd"))
+        {
+            print("\nDirectory path: ");
+            string path = readStr();
+            if (strEql(path, "/"))
+            {
+                current_dir = root;
+                print("\nChanged to root directory\n");
+            }
+            else
+            {
+                fs_node_t* dir = find_file(path);
+                if (dir && dir->is_directory)
+                {
+                    current_dir = dir;
+                    print("\nDirectory changed\n");
+                }
+                else
+                {
+                    print("\nDirectory not found or not a directory\n");
+                }
+            }
+            free(path);
+        }
         else
         {
-            print("\nBad command!\n");
+            print("\nCommand not found\n");
             print("KernelOS> ");
         }
         free(ch);
@@ -236,7 +269,7 @@ void gcd()
     free(input);
     print("\n");
     int arr[n];
-    int matrix[n][n];
+    int matrix[n][100];
     fill_array(arr, n);
     for (int i = 0; i < n; i++)
     {
@@ -333,7 +366,9 @@ void help()
     print("\ncolor     : Changes the colors of the terminal");
     print("\nmultiply  : Multiplies two numbers");
     print("\nmkdir     : Creates a new directory");
-    print("\nmkf     : Creates a new empty file");
+    print("\nmkf       : Creates a new empty file");
     print("\nls        : Lists the contents of the current directory");
+    print("\nedit      : Opens a text editor for a file");
+    print("\ncd        : Changes the current directory");
     print("\n\n");
 }
