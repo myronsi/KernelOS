@@ -62,9 +62,7 @@ dkms.conf
 *.sln
 *.sw?
 
+# Binary files
 *.bin
-
 *.com
-
-bochsout.*
-bochsrc.*
+*.img

@@ -1,21 +1,82 @@
 #include "../include/util.h"
+#include "../include/screen.h"
 
-static char heap[16384];
+#define HEAP_SIZE 524288
+static char heap[HEAP_SIZE];
 static uint32 heap_pos = 0;
+
+typedef struct {
+    void* ptr;
+    uint32 size;
+} heap_block_t;
+
+static heap_block_t blocks[1024];
+static uint32 block_count = 0;
 
 void* malloc(uint32 nbytes)
 {
-    if (heap_pos + nbytes > sizeof(heap)) {
-        return 0;
+    if (nbytes == 0) {
+        if (block_count < 1024) {
+            blocks[block_count].ptr = &heap[heap_pos];
+            blocks[block_count].size = 0;
+            block_count++;
+        }
+        return &heap[heap_pos];
+    }
+    if (heap_pos + nbytes > HEAP_SIZE) {
+        return NULL;
     }
     void* ptr = &heap[heap_pos];
     heap_pos += nbytes;
+    if (block_count < 1024) {
+        blocks[block_count].ptr = ptr;
+        blocks[block_count].size = nbytes;
+        block_count++;
+    }
     return ptr;
 }
 
 void free(void* ptr)
 {
+    if (ptr == NULL) return;
+    for (uint32 i = 0; i < block_count; i++) {
+        if (blocks[i].ptr == ptr) {
+            for (uint32 j = i; j < block_count - 1; j++) {
+                blocks[j] = blocks[j + 1];
+            }
+            block_count--;
+            break;
+        }
+    }
+}
 
+void* realloc(void* ptr, uint32 size)
+{
+    if (ptr == NULL) {
+        return malloc(size);
+    }
+    if (size == 0) {
+        free(ptr);
+        return malloc(0);
+    }
+    if ((uint8*)ptr >= (uint8*)&heap[0] && (uint8*)ptr < (uint8*)&heap[heap_pos]) {
+        uint32 old_size = 0;
+        for (uint32 i = 0; i < block_count; i++) {
+            if (blocks[i].ptr == ptr) {
+                old_size = blocks[i].size;
+                break;
+            }
+        }
+        void* new_ptr = malloc(size);
+        if (!new_ptr) {
+            return NULL;
+        }
+        if (old_size > size) old_size = size;
+        memory_copy((char*)ptr, (char*)new_ptr, old_size);
+        free(ptr);
+        return new_ptr;
+    }
+    return NULL;
 }
 
 uint32 strlen(const char* str)
@@ -27,7 +88,7 @@ uint32 strlen(const char* str)
 
 void __stack_chk_fail_local(void)
 {
-    while (1); 
+    while (1);
 }
 
 void memory_copy(char *source, char *dest, int nbytes)
@@ -72,6 +133,9 @@ int str_to_int(string ch)
 string int_to_string(int n)
 {
     string ch = malloc(50);
+    if (!ch) {
+        return "";
+    }
     int_to_ascii(n, ch);
     int len = strlen(ch);
     int i = 0;
@@ -87,15 +151,31 @@ string int_to_string(int n)
     return ch;
 }
 
-void* realloc(void* ptr, uint32 new_size)
+uint8 inb(uint16 port)
 {
-    if (!ptr) {
-        return malloc(new_size);
-    }
-    void* new_ptr = malloc(new_size);
-    if (!new_ptr) {
-        return 0;
-    }
-    memory_copy(ptr, new_ptr, new_size);
-    return new_ptr;
+    uint8 result;
+    __asm__ volatile("inb %1, %0" : "=a" (result) : "dN" (port));
+    return result;
+}
+
+void outb(uint16 port, uint8 value)
+{
+    __asm__ volatile("outb %0, %1" : : "a" (value), "dN" (port));
+}
+
+uint16 inw(uint16 port)
+{
+    uint16 result;
+    __asm__ volatile("inw %1, %0" : "=a" (result) : "dN" (port));
+    return result;
+}
+
+void outw(uint16 port, uint16 value)
+{
+    __asm__ volatile("outw %0, %1" : : "a" (value), "dN" (port));
+}
+
+uint32 get_heap_pos(void)
+{
+    return heap_pos;
 }
