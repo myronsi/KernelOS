@@ -6,6 +6,7 @@
 #include "screen.h"
 #include "types.h"
 #include "util.h"
+#include "fs.h"
 
 void launch_shell(int n);
 void sum();
@@ -23,5 +24,7 @@ void print_matrix(int matrix[][100], int rows, int cols);
 void set_background_color();
 void multiply();
 void help();
+void parse_command(char* input, char** command, char** args);
+fs_node_t* resolve_path(char* path, fs_node_t* current_dir, fs_node_t* root);
 
 #endif

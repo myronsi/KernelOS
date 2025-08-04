@@ -2,125 +2,317 @@
 #include "../include/fs.h"
 #include "../include/editor.h"
 
+int strncmp(const char* s1, const char* s2, uint32 n) {
+    for (uint32 i = 0; i < n; i++) {
+        if (s1[i] != s2[i] || s1[i] == '\0' || s2[i] == '\0') {
+            return s1[i] - s2[i];
+        }
+    }
+    return 0;
+}
+
+char* strrchr(const char* s, int c) {
+    char* last = NULL;
+    while (*s) {
+        if (*s == c) {
+            last = (char*)s;
+        }
+        s++;
+    }
+    if (c == '\0') {
+        return (char*)s;
+    }
+    return last;
+}
+
+char* strncpy(char* dest, const char* src, uint32 n) {
+    uint32 i;
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+        dest[i] = src[i];
+    }
+    for (; i < n; i++) {
+        dest[i] = '\0';
+    }
+    return dest;
+}
+
+void parse_command(char* input, char** command, char** args) {
+    *command = input;
+    *args = NULL;
+    int i = 0;
+    while (input[i] && input[i] != ' ') i++;
+    if (input[i] == ' ') {
+        input[i] = '\0';
+        *args = input + i + 1;
+        while (**args == ' ') (*args)++;
+        if (**args == '\0') *args = NULL;
+    }
+}
+
+fs_node_t* resolve_path(char* path, fs_node_t* current_dir, fs_node_t* root) {
+    if (!path || path[0] == '\0') return NULL;
+
+    fs_node_t* base = (path[0] == '/') ? root : current_dir;
+    if (path[0] == '/') path++;
+    else if (strncmp(path, "./", 2) == 0) path += 2;
+
+    if (path[0] == '\0') return base;
+
+    fs_node_t* current = base;
+    char* name = malloc(256);
+    if (!name) {
+        print("Memory allocation failed for path name\n");
+        return NULL;
+    }
+    int i = 0, j = 0;
+
+    while (path[i]) {
+        j = 0;
+        while (path[i] && path[i] != '/' && j < 255) {
+            name[j++] = path[i++];
+        }
+        name[j] = '\0';
+        if (path[i] == '/') i++;
+
+        if (strEql(name, "..")) {
+            if (current == root) continue;
+            for (int k = 0; k < root->num_children; k++) {
+                if (root->children[k] == current) {
+                    current = root;
+                    break;
+                }
+            }
+            for (int k = 0; k < current->num_children; k++) {
+                if (current->children[k] == current) {
+                    current = root;
+                    break;
+                }
+            }
+            continue;
+        }
+
+        if (name[0] == '\0') continue;
+
+        int found = 0;
+        for (uint32 k = 0; k < current->num_children; k++) {
+            if (current->children[k] && strEql(current->children[k]->name, name)) {
+                current = current->children[k];
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            free(name);
+            return NULL;
+        }
+    }
+    free(name);
+    return current;
+}
+
 void launch_shell(int n)
 {
-    string ch = (string) malloc(200);
-    string temp;
+    char* ch = (char*) malloc(200);
+    char* command;
+    char* args;
     do
     {
         print("KernelOS (");
-        temp = int_to_string(n);
+        char* temp = int_to_string(n);
         print(temp);
         free(temp);
         print(")> ");
         ch = readStr();
-        if (strEql(ch, "cmd"))
+        parse_command(ch, &command, &args);
+
+        if (strEql(command, "cmd"))
         {
             print("\nYou are already in cmd. A new recursive shell is opened\n");
             launch_shell(n + 1);
         }
-        else if (strEql(ch, "clear"))
+        else if (strEql(command, "clear"))
         {
             clearScreen();
         }
-        else if (strEql(ch, "sum"))
+        else if (strEql(command, "sum"))
         {
             sum();
         }
-        else if (strEql(ch, "echo"))
+        else if (strEql(command, "echo"))
         {
             echo();
         }
-        else if (strEql(ch, "sort"))
+        else if (strEql(command, "sort"))
         {
             sort();
         }
-        else if (strEql(ch, "fibonacci"))
+        else if (strEql(command, "fibonacci"))
         {
             fibonacci();
         }
-        else if (strEql(ch, "gcd"))
+        else if (strEql(command, "gcd"))
         {
             gcd();
         }
-        else if (strEql(ch, "help"))
+        else if (strEql(command, "help"))
         {
             help();
         }
-        else if (strEql(ch, "color"))
+        else if (strEql(command, "color"))
         {
             set_background_color();
         }
-        else if (strEql(ch, "multiply"))
+        else if (strEql(command, "multiply"))
         {
             multiply();
         }
-        else if (strEql(ch, "mkdir"))
+        else if (strEql(command, "mkdir"))
         {
-            print("\nDirectory name: ");
-            string dir_name = readStr();
-            create_directory(current_dir, dir_name);
-            free(dir_name);
-            print("\n");
-        }
-        else if (strEql(ch, "mkf"))
-        {
-            print("\nFile name: ");
-            string file_name = readStr();
-            create_file(current_dir, file_name);
-            free(file_name);
-            print("\n");
-        }
-        else if (strEql(ch, "ls"))
-        {
-            print("\n");
-            list_directory(current_dir);
-        }
-        else if (strEql(ch, "edit"))
-        {
-            print("\nFile path: ");
-            string path = readStr();
-            edit_file(path);
-            free(path);
-            print("\n");
-        }
-        else if (strEql(ch, "cd"))
-        {
-            print("\nDirectory path: ");
-            string path = readStr();
-            if (strEql(path, "/"))
-            {
-                current_dir = root;
-                print("\nChanged to root directory\n");
-            }
-            else
-            {
-                fs_node_t* dir = find_file(path);
-                if (dir && dir->is_directory)
-                {
-                    current_dir = dir;
-                    print("\nDirectory changed\n");
+            if (!args) {
+                print("\nDirectory name: ");
+                char* dir_name = readStr();
+                create_directory(current_dir, dir_name);
+                free(dir_name);
+                print("\n");
+            } else {
+                char* path = args;
+                char* last_slash = strrchr(path, '/');
+                if (last_slash && last_slash != path) {
+                    char* parent_path = malloc(last_slash - path + 1);
+                    if (!parent_path) {
+                        print("Memory allocation failed\n");
+                        print("\n");
+                        continue;
+                    }
+                    strncpy(parent_path, path, last_slash - path);
+                    parent_path[last_slash - path] = '\0';
+                    fs_node_t* parent = resolve_path(parent_path, current_dir, root);
+                    free(parent_path);
+                    if (!parent || !parent->is_directory) {
+                        print("\nParent directory not found or not a directory\n");
+                        print("\n");
+                        continue;
+                    }
+                    create_directory(parent, last_slash + 1);
+                } else {
+                    fs_node_t* parent = (path[0] == '/') ? root : current_dir;
+                    if (path[0] == '/') path++;
+                    create_directory(parent, path);
                 }
-                else
-                {
+                print("\n");
+            }
+        }
+        else if (strEql(command, "mkf"))
+        {
+            if (!args) {
+                print("\nFile name: ");
+                char* file_name = readStr();
+                create_file(current_dir, file_name);
+                free(file_name);
+                print("\n");
+            } else {
+                char* path = args;
+                char* last_slash = strrchr(path, '/');
+                if (last_slash && last_slash != path) {
+                    char* parent_path = malloc(last_slash - path + 1);
+                    if (!parent_path) {
+                        print("Memory allocation failed\n");
+                        print("\n");
+                        continue;
+                    }
+                    strncpy(parent_path, path, last_slash - path);
+                    parent_path[last_slash - path] = '\0';
+                    fs_node_t* parent = resolve_path(parent_path, current_dir, root);
+                    free(parent_path);
+                    if (!parent || !parent->is_directory) {
+                        print("\nParent directory not found or not a directory\n");
+                        print("\n");
+                        continue;
+                    }
+                    create_file(parent, last_slash + 1);
+                } else {
+                    fs_node_t* parent = (path[0] == '/') ? root : current_dir;
+                    if (path[0] == '/') path++;
+                    create_file(parent, path);
+                }
+                print("\n");
+            }
+        }
+        else if (strEql(command, "ls"))
+        {
+            fs_node_t* dir = current_dir;
+            if (args) {
+                dir = resolve_path(args, current_dir, root);
+                if (!dir || !dir->is_directory) {
                     print("\nDirectory not found or not a directory\n");
+                    print("\n");
+                    continue;
                 }
             }
-            free(path);
+            print("\n");
+            list_directory(dir);
+            print("\n");
+        }
+        else if (strEql(command, "edit"))
+        {
+            if (!args) {
+                print("\nFile path: ");
+                char* path = readStr();
+                edit_file(path);
+                free(path);
+                print("\n");
+            } else {
+                edit_file(args);
+                print("\n");
+            }
+        }
+        else if (strEql(command, "cd"))
+        {
+            if (!args) {
+                print("\nDirectory path: ");
+                char* path = readStr();
+                if (strEql(path, "/")) {
+                    current_dir = root;
+                    print("\nChanged to root directory\n");
+                } else {
+                    fs_node_t* dir = resolve_path(path, current_dir, root);
+                    if (dir && dir->is_directory) {
+                        current_dir = dir;
+                        print("\nDirectory changed\n");
+                    } else {
+                        print("\nDirectory not found or not a directory\n");
+                    }
+                }
+                free(path);
+                print("\n");
+            } else {
+                if (strEql(args, "/")) {
+                    current_dir = root;
+                    print("\nChanged to root directory\n");
+                } else {
+                    fs_node_t* dir = resolve_path(args, current_dir, root);
+                    if (dir && dir->is_directory) {
+                        current_dir = dir;
+                        print("\nDirectory changed\n");
+                    } else {
+                        print("\nDirectory not found or not a directory\n");
+                    }
+                }
+                print("\n");
+            }
         }
         else
         {
             print("\nCommand not found\n");
-            print("KernelOS> ");
         }
         free(ch);
-    } while (!strEql(ch, "exit"));
+    } while (!strEql(command, "exit"));
 }
 
 void sum()
 {
     print("\nHow many numbers: ");
-    string input = readStr();
+    char* input = readStr();
     int n = str_to_int(input);
     free(input);
     print("\n");
@@ -128,7 +320,7 @@ void sum()
     fill_array(arr, n);
     int s = sum_array(arr, n);
     print("Result: ");
-    string result = int_to_string(s);
+    char* result = int_to_string(s);
     print(result);
     free(result);
     print("\n");
@@ -137,7 +329,7 @@ void sum()
 void echo()
 {
     print("\n");
-    string str = readStr();
+    char* str = readStr();
     print("\n");
     print(str);
     print("\n");
@@ -148,7 +340,7 @@ void sort()
 {
     int arr[100];
     print("\nArray size: ");
-    string input = readStr();
+    char* input = readStr();
     int n = str_to_int(input);
     free(input);
     print("\n");
@@ -170,11 +362,11 @@ void fill_array(int arr[], int n)
     for (i = 0; i < n; i++)
     {
         print("ARR[");
-        string index = int_to_string(i);
+        char* index = int_to_string(i);
         print(index);
         free(index);
         print("]: ");
-        string input = readStr();
+        char* input = readStr();
         arr[i] = str_to_int(input);
         free(input);
         print("\n");
@@ -186,7 +378,7 @@ void print_array(int arr[], int n)
     int i = 0;
     for (i = 0; i < n; i++)
     {
-        string value = int_to_string(arr[i]);
+        char* value = int_to_string(arr[i]);
         print(value);
         free(value);
         print("   ");
@@ -224,7 +416,7 @@ int sum_array(int arr[], int n)
 void fibonacci()
 {
     print("\nHow many Elements: ");
-    string input = readStr();
+    char* input = readStr();
     int n = str_to_int(input);
     free(input);
     print("\n");
@@ -232,11 +424,11 @@ void fibonacci()
     for (i = 0; i < n; i++)
     {
         print("Fibo ");
-        string index = int_to_string(i);
+        char* index = int_to_string(i);
         print(index);
         free(index);
         print(" : ");
-        string value = int_to_string(fibo(i));
+        char* value = int_to_string(fibo(i));
         print(value);
         free(value);
         print("\n");
@@ -264,7 +456,7 @@ int gcd_couple(int a, int b)
 void gcd()
 {
     print("\nHow many numbers: ");
-    string input = readStr();
+    char* input = readStr();
     int n = str_to_int(input);
     free(input);
     print("\n");
@@ -283,7 +475,7 @@ void gcd()
         }
     }
     print("Result: ");
-    string result = int_to_string(matrix[n - 1][0]);
+    char* result = int_to_string(matrix[n - 1][0]);
     print(result);
     free(result);
     print("\n");
@@ -295,7 +487,7 @@ void print_matrix(int matrix[][100], int rows, int cols)
     {
         for (int j = 0; j < cols; j++)
         {
-            string value = int_to_string(matrix[i][j]);
+            char* value = int_to_string(matrix[i][j]);
             print(value);
             free(value);
             print("   ");
@@ -325,11 +517,11 @@ void set_background_color()
     print_colored("\n15 : white", 15, 0);
 
     print("\n\nText color ? : ");
-    string text_input = readStr();
+    char* text_input = readStr();
     int text_color = str_to_int(text_input);
     free(text_input);
     print("\n\nBackground color ? : ");
-    string bg_input = readStr();
+    char* bg_input = readStr();
     int bg_color = str_to_int(bg_input);
     free(bg_input);
     set_screen_color(text_color, bg_color);
@@ -339,15 +531,15 @@ void set_background_color()
 void multiply()
 {
     print("\nNum 1 :");
-    string input1 = readStr();
+    char* input1 = readStr();
     int num1 = str_to_int(input1);
     free(input1);
     print("\nNum 2 :");
-    string input2 = readStr();
+    char* input2 = readStr();
     int num2 = str_to_int(input2);
     free(input2);
     print("\nResult : ");
-    string result = int_to_string(num1 * num2);
+    char* result = int_to_string(num1 * num2);
     print(result);
     free(result);
     print("\n");
@@ -365,10 +557,10 @@ void help()
     print("\nexit      : Quits the current shell");
     print("\ncolor     : Changes the colors of the terminal");
     print("\nmultiply  : Multiplies two numbers");
-    print("\nmkdir     : Creates a new directory");
-    print("\nmkf       : Creates a new empty file");
-    print("\nls        : Lists the contents of the current directory");
-    print("\nedit      : Opens a text editor for a file");
-    print("\ncd        : Changes the current directory");
+    print("\nmkdir     : Creates a new directory (e.g., mkdir test or mkdir /test/test1)");
+    print("\nmkf       : Creates a new empty file (e.g., mkf test or mkf /test/file1)");
+    print("\nls        : Lists the contents of a directory (e.g., ls or ls /test/test1)");
+    print("\nedit      : Opens a text editor for a file (e.g., edit /test/file1)");
+    print("\ncd        : Changes the current directory (e.g., cd test/test1 or cd ..)");
     print("\n\n");
 }

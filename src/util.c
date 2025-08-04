@@ -15,14 +15,7 @@ static uint32 block_count = 0;
 
 void* malloc(uint32 nbytes)
 {
-    if (nbytes == 0) {
-        if (block_count < 1024) {
-            blocks[block_count].ptr = &heap[heap_pos];
-            blocks[block_count].size = 0;
-            block_count++;
-        }
-        return &heap[heap_pos];
-    }
+    if (nbytes == 0) nbytes = 1;
     if (heap_pos + nbytes > HEAP_SIZE) {
         return NULL;
     }
@@ -32,6 +25,7 @@ void* malloc(uint32 nbytes)
         blocks[block_count].ptr = ptr;
         blocks[block_count].size = nbytes;
         block_count++;
+    } else {
     }
     return ptr;
 }
@@ -45,7 +39,7 @@ void free(void* ptr)
                 blocks[j] = blocks[j + 1];
             }
             block_count--;
-            break;
+            return;
         }
     }
 }
@@ -57,26 +51,26 @@ void* realloc(void* ptr, uint32 size)
     }
     if (size == 0) {
         free(ptr);
-        return malloc(0);
+        return malloc(1); // Минимальный размер
     }
-    if ((uint8*)ptr >= (uint8*)&heap[0] && (uint8*)ptr < (uint8*)&heap[heap_pos]) {
-        uint32 old_size = 0;
-        for (uint32 i = 0; i < block_count; i++) {
-            if (blocks[i].ptr == ptr) {
-                old_size = blocks[i].size;
-                break;
-            }
+    uint32 old_size = 0;
+    for (uint32 i = 0; i < block_count; i++) {
+        if (blocks[i].ptr == ptr) {
+            old_size = blocks[i].size;
+            break;
         }
-        void* new_ptr = malloc(size);
-        if (!new_ptr) {
-            return NULL;
-        }
-        if (old_size > size) old_size = size;
-        memory_copy((char*)ptr, (char*)new_ptr, old_size);
-        free(ptr);
-        return new_ptr;
     }
-    return NULL;
+    if (old_size == 0) {
+        return NULL;
+    }
+    void* new_ptr = malloc(size);
+    if (!new_ptr) {
+        return NULL;
+    }
+    uint32 copy_size = old_size < size ? old_size : size;
+    memory_copy((char*)ptr, (char*)new_ptr, copy_size);
+    free(ptr);
+    return new_ptr;
 }
 
 uint32 strlen(const char* str)
